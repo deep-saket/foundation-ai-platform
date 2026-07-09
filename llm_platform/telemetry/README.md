@@ -1,40 +1,44 @@
-# telemetry
+# `telemetry/` — Telemetry Providers
 
-## Purpose
+Implements the `ITelemetryProvider` interface with multiple backend strategies for collecting request telemetry (latency, token counts, errors).
 
-Capture platform metrics, traces, and structured events.
+---
 
-## Responsibilities
+## Files & Classes
 
-- Emit request-level telemetry
-- Provide metrics hooks
-- Prepare integration points for Prometheus and OpenTelemetry
+### `providers.py` — Provider Implementations
 
-## Architecture
+| Class | Interface | Use Case |
+|---|---|---|
+| `NoOpTelemetryProvider` | `ITelemetryProvider` | Null object pattern — silently discards all events and returns empty metrics. Used when telemetry is disabled. |
+| `MemoryTelemetryProvider` | `ITelemetryProvider` | In-memory telemetry sink backed by an `ITelemetryRepository`. Used for unit tests and local development. Identical in behavior to `RepositoryTelemetryProvider`. |
+| `RepositoryTelemetryProvider` | `ITelemetryProvider` | Repository-backed telemetry provider. Persists events via the injected `ITelemetryRepository` (SQLAlchemy or in-memory). Used for production with database persistence. |
 
-Telemetry providers are injected behind `ITelemetryProvider`. Default implementations are no-op or in-memory for tests.
+### Method Reference
 
-## Public APIs
+#### `NoOpTelemetryProvider`
 
-- Telemetry provider
-- Metrics exporters
+| Method | Signature | Use Case |
+|---|---|---|
+| `emit` | `(event: TelemetryEvent) → None` | Silently discards the event. |
+| `snapshot` | `() → MetricsSnapshot` | Returns an empty `MetricsSnapshot` (all zeros). |
 
-## Extension Points
+#### `MemoryTelemetryProvider` / `RepositoryTelemetryProvider`
 
-- Prometheus exporter
-- OpenTelemetry trace bridge
-- Audit event sinks
+| Method | Signature | Use Case |
+|---|---|---|
+| `__init__` | `(repository: ITelemetryRepository)` | Inject the repository used for persistence. |
+| `emit` | `(event: TelemetryEvent) → None` | Persists the telemetry event to the repository. |
+| `snapshot` | `() → MetricsSnapshot` | Returns aggregate metrics (total requests, total errors, average latency) from the repository. |
 
-## Configuration Examples
+---
 
-- `configs/telemetry/telemetry.yaml`
+## Provider Selection
 
-## Failure Modes
+The bootstrap layer selects the provider based on `config.telemetry.provider`:
 
-- Event sink outages
-- Cardinality explosions from labels
-- Partial event emission
-
-## Testing Strategy
-
-- Unit tests with in-memory providers
+| Config Value | Provider | Repository |
+|---|---|---|
+| `"memory"` | `MemoryTelemetryProvider` | In-memory telemetry repository |
+| `"database"` | `RepositoryTelemetryProvider` | SQLAlchemy telemetry repository |
+| Any other value | `NoOpTelemetryProvider` | None |

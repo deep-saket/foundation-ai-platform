@@ -9,7 +9,7 @@ lifecycle:
       idle_timeout_seconds: 300
       next_state: WARM
     WARM:
-      idle_timeout_seconds: 900
+      idle_timeout_seconds: 3600
       next_state: COLD
     COLD:
       idle_timeout_seconds: 0

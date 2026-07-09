@@ -1,40 +1,35 @@
-# lifecycle
+# `lifecycle/` — Deployment Lifecycle Management
 
-## Purpose
+Manages the state machine governing deployment lifecycle transitions. Deployments progress through thermal states based on idle duration, enabling future resource optimization (e.g., unloading cold deployments).
 
-Manage deployment temperature state transitions such as `HOT`, `WARM`, `COLD`, and `FAILED`.
+---
 
-## Responsibilities
+## State Machine
 
-- Apply lifecycle policy rules
-- Track state transitions
-- Coordinate unload and warmup behavior
+```
+HOT  ──(idle ≥ 300s)──▶  WARM  ──(idle ≥ 900s)──▶  COLD
+ ▲                                                    │
+ └────────────────(request received)──────────────────┘
+```
 
-## Architecture
+| State | Meaning |
+|---|---|
+| `HOT` | Deployment is actively serving requests (idle = 0). |
+| `WARM` | Deployment has been idle for ≥ 300 seconds (default). |
+| `COLD` | Deployment has been idle for ≥ 900 seconds (default). Candidate for unloading. |
+| `FAILED` | Deployment is in a failed state and will be skipped by the router. |
 
-Lifecycle services consult registry state, deployment metadata, and policies from configuration. They avoid direct dependency on concrete serving engines.
+---
 
-## Public APIs
+## Files & Classes
 
-- Lifecycle manager
-- Lifecycle policy evaluator
+### `manager.py` — `SimpleLifecycleManager`
 
-## Extension Points
+Implements `ILifecycleManager`. A state-machine skeleton driven by configurable idle timeout thresholds.
 
-- New transition guards
-- Cost-based or SLA-based policies
-- Scheduled reconciliation loops
-
-## Configuration Examples
-
-- Policies in `configs/lifecycle/policies.yaml`
-
-## Failure Modes
-
-- Illegal state transitions
-- Missing deployment metadata
-- Serving backend unavailability during transition
-
-## Testing Strategy
-
-- Unit tests for transition policy evaluation
+| Method | Signature | Use Case |
+|---|---|---|
+| `__init__` | `(warm_after_seconds: int = 300, cold_after_seconds: int = 900)` | Configure the idle thresholds that trigger state transitions. |
+| `initialize` | `(deployment: DeploymentRecord) → LifecycleRecord` | Create an initial lifecycle record in `HOT` state with `idle_duration_seconds = 0`. Called when a deployment is first created. |
+| `touch` | `(record: LifecycleRecord) → LifecycleRecord` | Reset a deployment to `HOT` state with zero idle duration. Called on every successful request to mark the deployment as recently used. |
+| `reconcile` | `(record: LifecycleRecord) → LifecycleRecord` | Evaluate the current idle duration against thresholds and transition to `WARM` or `COLD` if needed. Returns the record unchanged if no transition is required. Used by background reconciliation loops. |

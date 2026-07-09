@@ -52,14 +52,7 @@ def load_sample_data(config_path: Path = DEFAULT_CONFIG_PATH, catalog_path: Path
         catalog = yaml.safe_load(handle) or {}
 
     for item in catalog.get("models", []):
-        model = application.model_management_service.register_model(ModelRegistrationRequest(**item))
-        application.model_management_service.deploy_model(
-            DeploymentCreateRequest(
-                model_id=model.id,
-                endpoint=f"http://localhost:9000/models/{model.name}",
-                engine=model.engine,
-            )
-        )
+        application.model_management_service.register_model(ModelRegistrationRequest(**item))
 
 
 def bootstrap(config_path: Path = DEFAULT_CONFIG_PATH, catalog_path: Path | None = None) -> None:

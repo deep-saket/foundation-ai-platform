@@ -31,6 +31,8 @@ class ChatCompletionRequest(BaseModel):
     max_tokens: int | None = None
     stream: bool = False
     metadata: dict[str, Any] = Field(default_factory=dict)
+    password: str | None = None
+    huggingface_id: str | None = None
 
 
 class ChatCompletionResponse(BaseModel):

@@ -1,40 +1,45 @@
-# routing
+# `routing/` — Capability-Based Request Routing
 
-## Purpose
+Selects the best eligible deployment for an incoming chat completion request by matching requested capabilities against registered models and their active deployments.
 
-Route requests to compatible deployments based on declared capabilities rather than model names.
+---
 
-## Responsibilities
+## Routing Logic
 
-- Match requested capabilities to eligible models
-- Apply policy-based selection
-- Return deterministic routing decisions when possible
+1. **Filter** models by status (`REGISTERED` or `DEPLOYED`) and matching capability.
+2. **Prefer** the model matching `preferred_model_id` (if specified in the request).
+3. **Check** each model's deployment is in `READY` status.
+4. **Skip** deployments whose lifecycle state is `FAILED`.
+5. **Return** the first match as a `RouteDecision` containing `model_id`, `deployment_id`, `endpoint`, and `capability`.
+6. **Raise** `RoutingError` if no eligible deployment is found.
 
-## Architecture
+---
 
-Routing depends on registry read models plus configurable rules. It does not know about family names such as Qwen or Llama.
+## Files & Classes
 
-## Public APIs
+### `router.py` — `CapabilityRouter`
 
-- Router
-- Route policy evaluator
+Implements `IRouter`. Selects the first healthy deployment that satisfies the requested capability.
 
-## Extension Points
+| Method | Signature | Use Case |
+|---|---|---|
+| `route` | `(request: RouteRequest, models: list[ModelRecord], deployments: list[DeploymentRecord], lifecycle_records: list[LifecycleRecord]) → RouteDecision` | Core routing method. Iterates through models in priority order, matches capabilities, validates deployment status and lifecycle health, and returns the first eligible route. |
 
-- Cost-aware routing
-- Multi-objective ranking
-- A/B or canary routing
+#### `RouteRequest` Fields
 
-## Configuration Examples
+| Field | Type | Description |
+|---|---|---|
+| `capability` | `Capability \| str` | Required capability (e.g., `"chat"`, `"reasoning"`). |
+| `labels` | `dict[str, str]` | Optional label selectors (reserved for future use). |
+| `preferred_model_id` | `str \| None` | Optional preferred model to prioritize. |
+| `metadata` | `dict[str, Any]` | Free-form metadata passed through to routing decisions. |
 
-- Rules in `configs/routing/routes.yaml`
+#### `RouteDecision` Fields
 
-## Failure Modes
-
-- No eligible model found
-- Ambiguous selections without ranking policy
-- Stale registry data
-
-## Testing Strategy
-
-- Unit tests with fake registry snapshots
+| Field | Type | Description |
+|---|---|---|
+| `model_id` | `str` | Selected model identifier. |
+| `deployment_id` | `str` | Selected deployment identifier. |
+| `endpoint` | `str` | Deployment endpoint URL or address. |
+| `capability` | `Capability \| str` | Matched capability. |
+| `reason` | `str` | Human-readable explanation of the routing decision. |

@@ -30,6 +30,7 @@ class ModelRecord(BaseModel):
     family: str
     engine: str
     capabilities: list[Capability | str] = Field(default_factory=list)
+    vllm_eagle_head: str | None = None  # HuggingFace repo ID for EAGLE speculative decoding head
     memory_requirement_gb: int
     ownership: str
     status: ModelStatus = ModelStatus.REGISTERED
@@ -67,6 +68,7 @@ class ModelRegistrationRequest(BaseModel):
     family: str
     engine: str
     capabilities: list[Capability | str]
+    vllm_eagle_head: str | None = None
     memory_requirement_gb: int
     ownership: str
     metadata: dict[str, Any] = Field(default_factory=dict)

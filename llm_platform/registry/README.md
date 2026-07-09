@@ -1,41 +1,25 @@
-# registry
+# `registry/` — Registry Service
 
-## Purpose
+The service-level boundary for all model, deployment, and lifecycle record persistence. Acts as a thin coordination layer between the repository interfaces and the rest of the platform, ensuring that services never interact with raw repositories directly.
 
-Track models, deployments, and their current operational metadata.
+---
 
-## Responsibilities
+## Files & Classes
 
-- Register models and versions
-- Persist deployment records
-- Support lookup for routing and lifecycle
+### `service.py` — `RegistryService`
 
-## Architecture
+Implements `IRegistry`. Delegates all persistence operations to the injected repository implementations.
 
-Registry services depend on an abstract repository interface so storage can be in-memory for tests or SQL-backed in production.
-
-## Public APIs
-
-- Registry service
-- Repository implementations
-
-## Extension Points
-
-- Alternate persistence backends
-- Metadata enrichers
-- Validation hooks
-
-## Configuration Examples
-
-- Database configuration in `configs/platform.yaml`
-
-## Failure Modes
-
-- Duplicate registrations
-- Unknown model references
-- Persistence outages
-
-## Testing Strategy
-
-- Unit tests with in-memory repositories
-- Integration tests against temporary SQL backends later
+| Method | Signature | Use Case |
+|---|---|---|
+| `__init__` | `(model_repository: IModelRepository, deployment_repository: IDeploymentRepository, lifecycle_repository: ILifecycleRepository)` | Inject the three repository dependencies used for persistence. |
+| `register_model` | `(request: ModelRegistrationRequest) → ModelRecord` | Create a `ModelRecord` from the request and save it to the model repository. |
+| `get_model` | `(model_id: str) → ModelRecord` | Load a model by ID from the model repository. Raises `NotFoundError` if absent. |
+| `list_models` | `() → list[ModelRecord]` | List all registered models. |
+| `update_model` | `(model: ModelRecord) → ModelRecord` | Persist changes to an existing model record (e.g., status transitions). |
+| `create_deployment` | `(request: DeploymentCreateRequest) → DeploymentRecord` | Create a new `DeploymentRecord` from the request and save it to the deployment repository. |
+| `get_deployment` | `(deployment_id: str) → DeploymentRecord` | Load a deployment by ID. Raises `NotFoundError` if absent. |
+| `list_deployments` | `() → list[DeploymentRecord]` | List all deployments. |
+| `update_deployment` | `(deployment: DeploymentRecord) → DeploymentRecord` | Persist changes to an existing deployment record (e.g., status to READY or UNLOADED). |
+| `get_lifecycle` | `(deployment_id: str) → LifecycleRecord \| None` | Load lifecycle state for a deployment. Returns `None` if no record exists. |
+| `upsert_lifecycle` | `(record: LifecycleRecord) → LifecycleRecord` | Create or update a deployment's lifecycle state record. |

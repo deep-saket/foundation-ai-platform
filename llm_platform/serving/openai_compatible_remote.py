@@ -89,7 +89,13 @@ class OpenAICompatibleRemoteModelServer(IModelServer):
 
         with self._client(base_url) as client:
             response = client.post(self._config.chat_completions_path, json=payload)
-            response.raise_for_status()
+            if not response.is_success:
+                error_msg = response.text
+                try:
+                    error_msg = response.json().get("message", response.text)
+                except Exception:
+                    pass
+                raise ValidationError(f"Backend rejected request: {error_msg}")
             body = response.json()
         try:
             return str(body["choices"][0]["message"]["content"]).strip()

@@ -1,40 +1,81 @@
-# plugins
+# `plugins/` — Model Family Plugins
 
-## Purpose
+A plugin system for declaring model family metadata (supported engines, capabilities). Plugins are registered at bootstrap time based on the `plugins.enabled` configuration list. Each plugin provides a declarative `PluginManifest` that the platform uses to understand what model families are available.
 
-Load and register model family plugins without coupling the platform core to family names.
-
-## Responsibilities
-
-- Discover plugins
-- Register capabilities and engines
-- Isolate family-specific metadata
+---
 
 ## Architecture
 
-Plugins implement `IPlugin` and are loaded by a plugin manager. The platform core interacts only with interfaces and plugin manifests.
+```
+IPlugin (interface)
+  └── BasePlugin (base implementation with static manifest)
+        ├── QwenPlugin
+        ├── LlamaPlugin
+        ├── MistralPlugin
+        └── DeepSeekPlugin
+```
 
-## Public APIs
+---
 
-- Plugin manager
-- Plugin base classes
+## Core Files
 
-## Extension Points
+### `base.py` — `BasePlugin`
 
-- Entry-point based discovery
-- Remote plugin manifests
-- Organization-specific plugin packages
+Base plugin implementation that wraps a static `PluginManifest`.
 
-## Configuration Examples
+| Method / Property | Signature | Use Case |
+|---|---|---|
+| `__init__` | `(manifest: PluginManifest)` | Store the manifest provided by the concrete plugin subclass. |
+| `manifest` | `→ PluginManifest` (property) | Return the plugin's declarative manifest. |
+| `register` | `() → PluginManifest` | Return the manifest (used during plugin registration). |
 
-- Enabled plugins in `configs/platform.yaml`
+### `manager.py` — `PluginManager`
 
-## Failure Modes
+Central registry for active plugins. Prevents duplicate registrations.
 
-- Duplicate plugin identifiers
-- Invalid manifests
-- Version incompatibility between plugin and core
+| Method | Signature | Use Case |
+|---|---|---|
+| `__init__` | `()` | Initialize an empty plugin dictionary. |
+| `register` | `(plugin: IPlugin) → PluginManifest` | Register a plugin instance. Raises `ConflictError` if the `plugin_id` is already registered. |
+| `get` | `(plugin_id: str) → IPlugin` | Retrieve a registered plugin by ID. Raises `NotFoundError` if not found. |
+| `manifests` | `() → list[PluginManifest]` | Return a list of all registered plugin manifests. |
 
-## Testing Strategy
+---
 
-- Plugin loading tests with synthetic plugins
+## Plugin Implementations
+
+### `qwen/plugin.py` — `QwenPlugin`
+
+| Field | Value |
+|---|---|
+| Plugin ID | `qwen` |
+| Family | `qwen` |
+| Supported Engines | `vllm`, `huggingface-transformers` |
+| Capabilities | `chat`, `reasoning`, `tool_calling` |
+
+### `llama/plugin.py` — `LlamaPlugin`
+
+| Field | Value |
+|---|---|
+| Plugin ID | `llama` |
+| Family | `llama` |
+| Supported Engines | `vllm`, `huggingface-transformers` |
+| Capabilities | `chat`, `reasoning` |
+
+### `mistral/plugin.py` — `MistralPlugin`
+
+| Field | Value |
+|---|---|
+| Plugin ID | `mistral` |
+| Family | `mistral` |
+| Supported Engines | `vllm`, `huggingface-transformers` |
+| Capabilities | `chat`, `embedding`, `classification` |
+
+### `deepseek/plugin.py` — `DeepSeekPlugin`
+
+| Field | Value |
+|---|---|
+| Plugin ID | `deepseek` |
+| Family | `deepseek` |
+| Supported Engines | `vllm`, `huggingface-transformers` |
+| Capabilities | `chat`, `reasoning`, `evaluation` |

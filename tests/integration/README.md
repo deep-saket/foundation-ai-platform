@@ -1,34 +1,20 @@
-# integration tests
+# `tests/integration/` — Integration Tests
 
-## Purpose
+Multi-component integration tests exercising real SQLAlchemy repositories, full application bootstrap, and HTTP gateway endpoints via FastAPI's `TestClient`.
 
-Validate subsystem composition with in-memory or lightweight dependencies.
+---
 
-## Responsibilities
+## Test Files
 
-- Exercise gateway-to-service wiring
-- Validate repository and routing integration
+| File | Components Under Test | Key Scenarios |
+|---|---|---|
+| `test_bootstrap.py` | `PlatformApplicationBuilder`, `PlatformApplication` | Full application assembly from config, all services wired correctly, plugin loading, repository creation. |
+| `test_gateway.py` | Gateway HTTP routes, `ModelManagementService`, `ChatService` | Model registration via POST, model deployment via POST, chat completion via POST, health endpoint, error handling (404, 400). |
+| `test_openai_gateway.py` | `/v1/` OpenAI-compatible routes | Chat completion returns `choices[]` format, `finish_reason: "stop"`, correct `model` field, usage block present. |
+| `test_sqlalchemy_repositories.py` | `SQLAlchemyModelRepository`, `SQLAlchemyDeploymentRepository`, `SQLAlchemyLifecycleRepository`, `SQLAlchemyTelemetryRepository` | Save/get/list operations, `NotFoundError` for missing records, telemetry `snapshot()` aggregation, foreign key relationships. |
 
-## Architecture
+---
 
-Integration tests use real package wiring with fake servers and memory repositories.
+## Database
 
-## Public APIs
-
-- `pytest tests/integration`
-
-## Extension Points
-
-- Temporary SQL backends
-
-## Configuration Examples
-
-- Test-specific dependency overrides
-
-## Failure Modes
-
-- Slow or flaky tests
-
-## Testing Strategy
-
-- Keep scope narrow and deterministic
+Integration tests use a SQLite database at `./data/test-platform.db`. The `conftest.py` helper creates the schema automatically via `Base.metadata.create_all`.

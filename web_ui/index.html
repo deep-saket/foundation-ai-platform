@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foundation AI - EXL Theme</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Navigation -->
+        <aside class="sidebar">
+            <div class="logo-container">
+                <div class="logo-icon"></div>
+                <h2>Foundation AI</h2>
+            </div>
+            
+            <div class="persona-selector">
+                <label for="persona">Select Persona</label>
+                <div class="select-wrapper">
+                    <select id="persona">
+                        <option value="chat">Tyrion Lannister (Chat)</option>
+                        <option value="math">Euclid (Math)</option>
+                        <option value="reasoning">Socrates (Reasoning)</option>
+                        <option value="summarization">TL;DR (Summarization)</option>
+                    </select>
+                    <i class="fas fa-chevron-down select-icon"></i>
+                </div>
+            </div>
+            
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Platform Online</span>
+            </div>
+
+            <button id="clear-context-btn" class="clear-context-btn">
+                <i class="fas fa-rotate-left"></i> Clear Context
+            </button>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <header class="chat-header">
+                <div class="header-info">
+                    <h3 id="current-persona-title">Tyrion Lannister</h3>
+                    <p id="current-persona-desc">General conversational assistant.</p>
+                </div>
+            </header>
+
+            <div class="chat-history" id="chat-history">
+                <!-- Welcome Message -->
+                <div class="message system-message fade-in">
+                    <div class="avatar"><i class="fas fa-robot"></i></div>
+                    <div class="message-content">
+                        Welcome to Foundation AI. Select a persona from the left and start typing!
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <form id="chat-form">
+                    <textarea 
+                        id="prompt-input" 
+                        placeholder="Type your prompt here... (Press Enter to send, Shift+Enter for new line)"
+                        rows="1"
+                    ></textarea>
+                    <button type="submit" id="send-btn" class="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay for initial connection (optional) -->
+    <div class="loader-overlay" id="loader" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

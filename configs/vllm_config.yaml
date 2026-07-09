@@ -1,0 +1,8 @@
+serving:
+  engine_image: "vllm/vllm-openai:latest"
+  model_name: "Qwen/Qwen2.5-7B-Instruct"
+  container_name: "vllm-server-automated"
+  port: 8001
+  volumes:
+    host_path: "/opt/llm-platform/models/cache/huggingface"
+    container_path: "/root/.cache/huggingface"

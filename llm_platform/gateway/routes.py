@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from llm_platform.bootstrap import PlatformApplication
-from llm_platform.gateway.dependencies import get_application
+from llm_platform.gateway.dependencies import get_application, get_chat_service
+from llm_platform.services.chat import ChatService
 from llm_platform.schemas.gateway import (
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -39,23 +40,23 @@ def _translate_error(error: PlatformError) -> HTTPException:
 
 
 @router.post("/chat/completions", response_model=ChatCompletionResponse)
-def create_chat_completion(
+async def create_chat_completion(
     payload: ChatCompletionRequest,
     application: PlatformApplication = Depends(get_application),
 ) -> ChatCompletionResponse:
     try:
-        return application.chat_service.create_completion(payload)
+        return await application.chat_service.chat(payload)
     except PlatformError as error:
         raise _translate_error(error) from error
 
 
 @v1_router.post("/chat/completions", response_model=OpenAIChatCompletionResponse)
-def create_openai_chat_completion(
+async def create_openai_chat_completion(
     payload: ChatCompletionRequest,
     application: PlatformApplication = Depends(get_application),
 ) -> OpenAIChatCompletionResponse:
     try:
-        response = application.chat_service.create_completion(payload)
+        response = await application.chat_service.chat(payload)
     except PlatformError as error:
         raise _translate_error(error) from error
     return OpenAIChatCompletionResponse(
@@ -164,6 +165,43 @@ def list_models_v1(application: PlatformApplication = Depends(get_application)) 
     return ModelsResponse(models=application.model_management_service.list_models())
 
 
+# ── Model Capabilities Endpoint ──────────────────────────────────────
+
+@v1_router.get("/models/capabilities")
+def list_capabilities(
+    application: PlatformApplication = Depends(get_application),
+) -> dict[str, object]:
+    """Returns all registered capabilities and which models support each."""
+    models = application.model_management_service.list_models()
+    
+    capability_map: dict[str, list[dict[str, object]]] = {}
+    for model in models:
+        for cap in model.capabilities:
+            cap_str = str(cap)
+            if cap_str not in capability_map:
+                capability_map[cap_str] = []
+            capability_map[cap_str].append({
+                "model_id": model.id,
+                "model_name": model.name,
+                "family": model.family,
+                "memory_requirement_gb": model.memory_requirement_gb,
+                "vllm_eagle_head": model.vllm_eagle_head,
+                "status": str(model.status),
+            })
+    
+    return {
+        "capabilities": capability_map,
+        "total_models": len(models),
+    }
+
+
+@router.get("/models/capabilities")
+def list_capabilities_root(
+    application: PlatformApplication = Depends(get_application),
+) -> dict[str, object]:
+    return list_capabilities(application)
+
+
 @router.get("/models/{model_id}", response_model=ModelResponse)
 def get_model(
     model_id: str,
@@ -205,3 +243,102 @@ def get_metrics(application: PlatformApplication = Depends(get_application)) -> 
 @v1_router.get("/health")
 def get_health_v1(application: PlatformApplication = Depends(get_application)) -> dict[str, object]:
     return application.health_service.health()
+
+# Code for POST request
+@v1_router.post("/chat/completions/direct", response_model=ChatCompletionResponse)
+async def create_direct_chat_completion(
+	request: ChatCompletionRequest,
+	chat_service: ChatService = Depends(get_chat_service),
+) -> ChatCompletionResponse:
+	"""response_model=ChatCompletionResponse guarantees returned object follows this layout."""
+
+	try:
+		response = await chat_service.chat(request)
+		return response
+	except PlatformError as error:
+		raise _translate_error(error) from error
+
+
+# ── GPU Status Endpoint ──────────────────────────────────────────────
+
+@v1_router.get("/gpu/status")
+def get_gpu_status(
+    application: PlatformApplication = Depends(get_application),
+) -> dict[str, object]:
+    """Returns current GPU VRAM allocation and available headroom."""
+    tracker = application.gpu_tracker
+    return {
+        "total_vram_gb": tracker.total_vram_gb,
+        "allocated_vram_gb": tracker.allocated_vram_gb,
+        "available_vram_gb": tracker.available_vram_gb,
+        "allocations": tracker.allocations,
+    }
+
+
+@router.get("/gpu/status")
+def get_gpu_status_root(
+    application: PlatformApplication = Depends(get_application),
+) -> dict[str, object]:
+    return get_gpu_status(application)
+
+
+# ── Inference Metrics Endpoint (TPOT, TTFT, E2EL, ITL) ──────────────
+
+@v1_router.get("/inference/metrics")
+def get_inference_metrics(
+    application: PlatformApplication = Depends(get_application),
+    limit: int = 50,
+) -> dict[str, object]:
+    """Returns inference telemetry with TPOT, TTFT, E2EL, ITL breakdowns.
+
+    - **TPOT**: Time Per Output Token (ms)
+    - **TTFT**: Time To First Token (ms)
+    - **E2EL**: End-to-End Latency (ms)
+    - **ITL**: Inter-Token Latency (ms)
+    """
+    snapshot = application.telemetry_provider.snapshot()
+    
+    # Get recent events for per-request breakdown
+    events = []
+    try:
+        raw_events = application.telemetry_provider._repository.list()
+        for event in raw_events[-limit:]:
+            events.append({
+                "request_id": event.request_id,
+                "model_name": event.model_name,
+                "e2e_latency_ms": round(event.e2e_latency_ms, 2),
+                "ttft_ms": round(event.ttft_ms, 2),
+                "tpot_ms": round(event.tpot_ms, 2),
+                "itl_ms": round(event.itl_ms, 2),
+                "completion_tokens": event.completion_tokens,
+                "speculative_decoding": event.speculative_decoding,
+                "timestamp": event.timestamp.isoformat(),
+                "metadata": event.metadata,
+            })
+    except AttributeError:
+        # NoOpTelemetryProvider has no _repository
+        pass
+
+    return {
+        "summary": {
+            "total_requests": snapshot.total_requests,
+            "total_errors": snapshot.total_errors,
+            "average_e2e_latency_ms": round(snapshot.average_e2e_latency_ms, 2),
+            "average_ttft_ms": round(snapshot.average_ttft_ms, 2),
+            "average_tpot_ms": round(snapshot.average_tpot_ms, 2),
+            "average_itl_ms": round(snapshot.average_itl_ms, 2),
+            "p95_latency_ms": round(snapshot.p95_latency_ms, 2),
+            "p99_latency_ms": round(snapshot.p99_latency_ms, 2),
+            "requests_with_speculative_decoding": snapshot.requests_with_speculative_decoding,
+        },
+        "recent_requests": events,
+    }
+
+
+@router.get("/inference/metrics")
+def get_inference_metrics_root(
+    application: PlatformApplication = Depends(get_application),
+    limit: int = 50,
+) -> dict[str, object]:
+    return get_inference_metrics(application, limit)
+

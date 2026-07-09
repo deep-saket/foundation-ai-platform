@@ -1,43 +1,30 @@
-# deployment
+# `deployment/` — Deployment Artifacts
 
-## Purpose
+Contains Docker and deployment-related files for containerizing and deploying the platform.
 
-Hold environment and deployment assets for the platform.
+---
 
-## Responsibilities
+## Files
 
-- Container manifests
-- Helm charts or compose files later
-- Environment-specific deployment guidance
+### `Dockerfile.gateway`
 
-## Architecture
+Dockerfile for building the FastAPI gateway container image.
 
-Deployment assets stay outside application code to separate runtime packaging from operational concerns.
+- **Base Image:** Python slim
+- **Copies:** Platform source code and dependencies
+- **Exposes:** The gateway port (default 8000)
+- **Entrypoint:** Runs the FastAPI gateway application via `uvicorn`
 
-## Public APIs
+---
 
-- None yet
+## Usage
 
-## Current Assets
+```bash
+# Build the gateway image
+docker build -f deployment/Dockerfile.gateway -t foundation-ai-gateway .
 
-- `deployment/Dockerfile.gateway`: gateway container image
-- `docker-compose.yml`: local multi-service stack with gateway, vLLM, and TGI profiles
-- `.env.example`: environment variables for the local deployment stack
+# Run the gateway container
+docker run -p 8000:8000 foundation-ai-gateway
+```
 
-## Extension Points
-
-- Kubernetes manifests
-- Dockerfiles
-- Terraform modules
-
-## Configuration Examples
-
-- Reference `configs/platform.yaml`
-
-## Failure Modes
-
-- Environment drift between manifests and code
-
-## Testing Strategy
-
-- Lint and smoke checks for manifests as they are added
+The gateway can also be run as part of the full stack using the root `docker-compose.yml`, which orchestrates the gateway alongside the vLLM serving container.

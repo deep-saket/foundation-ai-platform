@@ -19,7 +19,7 @@ plugins:
     - deepseek
 
 serving:
-  implementation: fake
+  implementation: vllm
   default_engine: vllm
   supported_engines:
     - vllm
@@ -28,6 +28,8 @@ serving:
   default_placement: cpu
   fallback_placements: []
   model_cache_dir: ./data/model-cache
+  gpu_vram_gb: 48
+  num_speculative_tokens: 5
   vllm:
     base_url: http://localhost:8001
     api_key: token-abc123

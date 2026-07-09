@@ -1,21 +1,37 @@
 models:
-  - name: general-chat
+  - name: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+    version: "1.0.0"
+    family: generic
+    engine: vllm
+    capabilities:
+      - chat
+    memory_requirement_gb: 4
+    ownership: platform
+    status: registered
+  - name: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+    version: "1.0.0"
+    family: generic
+    engine: vllm
+    capabilities:
+      - reasoning
+    memory_requirement_gb: 4
+    ownership: platform
+    status: registered
+  - name: Qwen/Qwen2.5-1.5B-Instruct
     version: "1.0.0"
     family: qwen
     engine: vllm
     capabilities:
-      - chat
-      - reasoning
-    memory_requirement_gb: 24
+      - summarization
+    memory_requirement_gb: 4
     ownership: platform
     status: registered
-  - name: embedding-service
+  - name: microsoft/Phi-3-mini-4k-instruct
     version: "1.0.0"
-    family: mistral
-    engine: huggingface-transformers
+    family: generic
+    engine: vllm
     capabilities:
-      - embedding
-      - classification
-    memory_requirement_gb: 12
+      - math
+    memory_requirement_gb: 4
     ownership: platform
     status: registered

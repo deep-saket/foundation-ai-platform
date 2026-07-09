@@ -1,0 +1,32 @@
+# Use CUDA 12.6 base (compatible with any driver >= 12.6, so your 12.7 driver will run it perfectly!)
+FROM nvidia/cuda:12.6.0-base-ubuntu22.04
+
+# Avoid tzdata interactive prompt during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Python 3.12, pip, and curl
+RUN apt-get update && apt-get install -y software-properties-common && \
+    add-apt-repository ppa:deadsnakes/ppa -y && \
+    apt-get update && apt-get install -y \
+    python3.12 \
+    python3.12-venv \
+    python3.12-dev \
+    python3-pip \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set python3 to point to python3.12
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+
+# Install the blazing fast `uv` package manager
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Install vLLM 0.22.1 using uv for massive speed improvements
+RUN uv pip install --system vllm==0.22.1
+
+# Expose vLLM port
+EXPOSE 8000
+
+# Entrypoint for the API server
+ENTRYPOINT ["python3", "-m", "vllm.entrypoints.openai.api_server"]

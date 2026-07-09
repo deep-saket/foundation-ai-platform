@@ -8,6 +8,7 @@ from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, Stri
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
+
 class Base(DeclarativeBase):
     """SQLAlchemy declarative base."""
 
@@ -23,6 +24,7 @@ class ModelTable(Base):
     family: Mapped[str] = mapped_column(String(128), nullable=False)
     engine: Mapped[str] = mapped_column(String(128), nullable=False)
     capabilities: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    vllm_eagle_head: Mapped[str | None] = mapped_column(String(512), nullable=True)
     memory_requirement_gb: Mapped[int] = mapped_column(Integer, nullable=False)
     ownership: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -65,9 +67,14 @@ class TelemetryTable(Base):
     deployment_id: Mapped[str] = mapped_column(String(64), ForeignKey("deployments.deployment_id"), nullable=False)
     model_name: Mapped[str] = mapped_column(String(255), nullable=False)
     latency_ms: Mapped[float] = mapped_column(Float, nullable=False)
+    e2e_latency_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    ttft_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    tpot_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    itl_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     prompt_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     completion_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     cache_hit: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    speculative_decoding: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     error: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     metadata_json: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)

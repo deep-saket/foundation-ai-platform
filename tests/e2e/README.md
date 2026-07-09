@@ -1,33 +1,19 @@
-# e2e tests
+# `tests/e2e/` — End-to-End Tests
 
-## Purpose
+Full-stack end-to-end tests that may require ML dependencies, running containers, or GPU hardware.
 
-Reserve space for deployment-level validation once real serving backends are introduced.
+---
 
-## Responsibilities
+## Test Files
 
-- Validate production-like workflows end to end
+| File | Description |
+|---|---|
+| `test_placeholder.py` | Placeholder test validating that the E2E test infrastructure and pytest discovery are working correctly. |
 
-## Architecture
+---
 
-These tests will eventually run against deployed gateway, registry, and serving infrastructure.
+## Notes
 
-## Public APIs
-
-- `pytest tests/e2e`
-
-## Extension Points
-
-- Staging environment smoke tests
-
-## Configuration Examples
-
-- Environment-driven test targets
-
-## Failure Modes
-
-- Environmental flakiness
-
-## Testing Strategy
-
-- Keep e2e coverage selective
+- E2E tests are separated from unit and integration tests because they may have heavier requirements (PyTorch, vLLM containers, GPU access).
+- Use `scripts/smoke_test_hosting.py` for manual E2E validation of the full hosting pipeline.
+- Future E2E tests will cover: full register → deploy → chat → unload workflows against real backends.

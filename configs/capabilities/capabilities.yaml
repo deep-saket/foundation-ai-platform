@@ -5,6 +5,10 @@ capabilities:
     description: Extended reasoning workflows
   tool_calling:
     description: Structured tool invocation support
+  summarization:
+    description: Text summarization and condensation
+  code_generation:
+    description: Source code generation and completion
   embedding:
     description: Vector embedding generation
   evaluation:

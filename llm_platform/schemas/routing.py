@@ -20,7 +20,10 @@ class RouteRequest(BaseModel):
 
 class RouteDecision(BaseModel):
     model_id: str
-    deployment_id: str
-    endpoint: str
+    deployment_id: str | None = None
+    endpoint: str | None = None
     capability: Capability | str
     reason: str
+    requires_cold_start: bool = False
+    requires_new_instance: bool = False  # Need to spin up a new container (GPU has space)
+    evict_deployment_id: str | None = None  # Deployment to evict before loading (GPU full)

@@ -30,6 +30,7 @@ def _model_from_row(row: ModelTable) -> ModelRecord:
         family=row.family,
         engine=row.engine,
         capabilities=row.capabilities,
+        vllm_eagle_head=row.vllm_eagle_head,
         memory_requirement_gb=row.memory_requirement_gb,
         ownership=row.ownership,
         status=row.status,
@@ -66,9 +67,14 @@ def _telemetry_from_row(row: TelemetryTable) -> TelemetryEvent:
         deployment_id=row.deployment_id,
         model_name=row.model_name,
         latency_ms=row.latency_ms,
+        e2e_latency_ms=row.e2e_latency_ms,
+        ttft_ms=row.ttft_ms,
+        tpot_ms=row.tpot_ms,
+        itl_ms=row.itl_ms,
         prompt_tokens=row.prompt_tokens,
         completion_tokens=row.completion_tokens,
         cache_hit=row.cache_hit,
+        speculative_decoding=row.speculative_decoding,
         error=row.error,
         timestamp=row.timestamp,
         metadata=row.metadata_json,
@@ -150,10 +156,25 @@ class InMemoryTelemetryRepository(ITelemetryRepository):
         total_requests = len(events)
         total_errors = sum(1 for event in events if event.error)
         average_latency = sum(event.latency_ms for event in events) / total_requests if total_requests else 0.0
+        average_e2e = sum(event.e2e_latency_ms for event in events) / total_requests if total_requests else 0.0
+        average_ttft = sum(event.ttft_ms for event in events) / total_requests if total_requests else 0.0
+        average_tpot = sum(event.tpot_ms for event in events) / total_requests if total_requests else 0.0
+        average_itl = sum(event.itl_ms for event in events) / total_requests if total_requests else 0.0
+        spec_count = sum(1 for event in events if event.speculative_decoding)
+        latencies = sorted(event.latency_ms for event in events)
+        p95 = latencies[int(len(latencies) * 0.95)] if latencies else 0.0
+        p99 = latencies[int(min(len(latencies) * 0.99, len(latencies) - 1))] if latencies else 0.0
         return MetricsSnapshot(
             total_requests=total_requests,
             total_errors=total_errors,
             average_latency_ms=average_latency,
+            average_e2e_latency_ms=average_e2e,
+            average_ttft_ms=average_ttft,
+            average_tpot_ms=average_tpot,
+            average_itl_ms=average_itl,
+            p95_latency_ms=p95,
+            p99_latency_ms=p99,
+            requests_with_speculative_decoding=spec_count,
         )
 
 
@@ -171,6 +192,7 @@ class SQLAlchemyModelRepository(IModelRepository):
             row.family = model.family
             row.engine = model.engine
             row.capabilities = [str(capability) for capability in model.capabilities]
+            row.vllm_eagle_head = model.vllm_eagle_head
             row.memory_requirement_gb = model.memory_requirement_gb
             row.ownership = model.ownership
             row.status = str(model.status)
@@ -270,9 +292,14 @@ class SQLAlchemyTelemetryRepository(ITelemetryRepository):
             row.deployment_id = event.deployment_id
             row.model_name = event.model_name
             row.latency_ms = event.latency_ms
+            row.e2e_latency_ms = event.e2e_latency_ms
+            row.ttft_ms = event.ttft_ms
+            row.tpot_ms = event.tpot_ms
+            row.itl_ms = event.itl_ms
             row.prompt_tokens = event.prompt_tokens
             row.completion_tokens = event.completion_tokens
             row.cache_hit = event.cache_hit
+            row.speculative_decoding = event.speculative_decoding
             row.error = event.error
             row.timestamp = event.timestamp
             row.metadata_json = event.metadata
@@ -291,10 +318,21 @@ class SQLAlchemyTelemetryRepository(ITelemetryRepository):
             total_requests = session.scalar(select(func.count(TelemetryTable.request_id))) or 0
             total_errors = session.scalar(select(func.count(TelemetryTable.request_id)).where(TelemetryTable.error.is_not(None))) or 0
             average_latency = session.scalar(select(func.avg(TelemetryTable.latency_ms))) or 0.0
+            average_e2e = session.scalar(select(func.avg(TelemetryTable.e2e_latency_ms))) or 0.0
+            average_ttft = session.scalar(select(func.avg(TelemetryTable.ttft_ms))) or 0.0
+            average_tpot = session.scalar(select(func.avg(TelemetryTable.tpot_ms))) or 0.0
+            average_itl = session.scalar(select(func.avg(TelemetryTable.itl_ms))) or 0.0
+            spec_count = session.scalar(select(func.count(TelemetryTable.request_id)).where(TelemetryTable.speculative_decoding.is_(True))) or 0
             return MetricsSnapshot(
                 total_requests=int(total_requests),
                 total_errors=int(total_errors),
                 average_latency_ms=float(average_latency),
+                average_e2e_latency_ms=float(average_e2e),
+                average_ttft_ms=float(average_ttft),
+                average_tpot_ms=float(average_tpot),
+                average_itl_ms=float(average_itl),
+                requests_with_speculative_decoding=int(spec_count),
+                # p95/p99 computed at application level for SQL simplicity
             )
 
 

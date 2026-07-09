@@ -1,36 +1,25 @@
-# deepseek plugin
+# `plugins/deepseek/` — DeepSeek Model Family Plugin
 
-## Purpose
+Plugin for the DeepSeek model family. Declares support for vLLM and HuggingFace Transformers serving engines.
 
-Reference plugin package for the DeepSeek model family.
+---
 
-## Responsibilities
+## Manifest
 
-- Provide family metadata
-- Advertise supported engines and capabilities
-- Keep family-specific defaults outside the core
+| Field | Value |
+|---|---|
+| Plugin ID | `deepseek` |
+| Family | `deepseek` |
+| Supported Engines | `vllm`, `huggingface-transformers` |
+| Capabilities | `chat`, `reasoning`, `evaluation` |
 
-## Architecture
+## Class
 
-This package contains a lightweight plugin manifest and no special treatment from the core platform.
+### `plugin.py` — `DeepSeekPlugin`
 
-## Public APIs
+Extends `BasePlugin` with a static `PluginManifest`. No custom logic — all behavior inherited from the base class.
 
-- `DeepSeekPlugin`
-
-## Extension Points
-
-- Family-specific compatibility rules
-- Default configuration templates
-
-## Configuration Examples
-
-- Enable through `configs/platform.yaml`
-
-## Failure Modes
-
-- Misdeclared engine support
-
-## Testing Strategy
-
-- Plugin registration tests
+| Method | Inherited From | Use Case |
+|---|---|---|
+| `manifest` | `BasePlugin` | Returns the DeepSeek manifest. |
+| `register` | `BasePlugin` | Registers the manifest with the `PluginManager`. |

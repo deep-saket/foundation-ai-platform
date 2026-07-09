@@ -1,36 +1,25 @@
-# llama plugin
+# `plugins/llama/` — Llama Model Family Plugin
 
-## Purpose
+Plugin for Meta's Llama model family. Declares support for vLLM and HuggingFace Transformers serving engines.
 
-Reference plugin package for the Llama model family.
+---
 
-## Responsibilities
+## Manifest
 
-- Provide family metadata
-- Advertise supported engines and capabilities
-- Keep family-specific defaults outside the core
+| Field | Value |
+|---|---|
+| Plugin ID | `llama` |
+| Family | `llama` |
+| Supported Engines | `vllm`, `huggingface-transformers` |
+| Capabilities | `chat`, `reasoning` |
 
-## Architecture
+## Class
 
-This package contains a lightweight plugin manifest and no special treatment from the core platform.
+### `plugin.py` — `LlamaPlugin`
 
-## Public APIs
+Extends `BasePlugin` with a static `PluginManifest`. No custom logic — all behavior inherited from the base class.
 
-- `LlamaPlugin`
-
-## Extension Points
-
-- Family-specific compatibility rules
-- Default configuration templates
-
-## Configuration Examples
-
-- Enable through `configs/platform.yaml`
-
-## Failure Modes
-
-- Misdeclared engine support
-
-## Testing Strategy
-
-- Plugin registration tests
+| Method | Inherited From | Use Case |
+|---|---|---|
+| `manifest` | `BasePlugin` | Returns the Llama manifest. |
+| `register` | `BasePlugin` | Registers the manifest with the `PluginManager`. |

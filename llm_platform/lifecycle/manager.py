@@ -12,7 +12,7 @@ from llm_platform.schemas.registry import DeploymentRecord, LifecycleRecord
 class SimpleLifecycleManager(ILifecycleManager):
     """State-machine skeleton driven by idle timeout thresholds."""
 
-    def __init__(self, warm_after_seconds: int = 300, cold_after_seconds: int = 900) -> None:
+    def __init__(self, warm_after_seconds: int = 300, cold_after_seconds: int = 600) -> None:
         self._warm_after_seconds = warm_after_seconds
         self._cold_after_seconds = cold_after_seconds
 
