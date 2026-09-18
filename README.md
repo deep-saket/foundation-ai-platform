@@ -39,3 +39,7 @@ It now also includes:
 - a placement-aware local HuggingFace Transformers backend for `cpu`, `mps`, and `cuda`
 - Alembic-managed SQLite persistence by default
 - a smoke-test script for a real local model-hosting path
+- a native Apple Silicon serving path in [`mac-serving`](mac-serving/README.md)
+  for Gemma 4 E4B GGUF models using llama.cpp's Metal backend, with an
+  OpenAI-compatible endpoint, lifecycle controls, health and metrics endpoints,
+  footprint planning, and benchmarking tools
